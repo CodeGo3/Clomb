@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clomb — поиск</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a3a5c 0%, #2c5f8a 100%);
+            min-height: 100vh; color: white; overflow-x: hidden;
+            transition: background 0.5s;
+        }
+
+        /* ===== ТЁМНАЯ ТЕМА (PREMIUM) ===== */
+        body.dark-theme {
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%);
+        }
+        body.dark-theme .search-box { background: #1a1f4e; }
+        body.dark-theme .search-box input { background: #0a0e27; color: white; }
+        body.dark-theme .service-content { background: #1a1f4e; color: white; }
+        body.dark-theme .service-content input,
+        body.dark-theme .service-content textarea {
+            background: #0a0e27; color: white; border-color: #2a3f7e;
+        }
+        body.dark-theme .slide-preview {
+            background: #0a0e27; border-color: #2a3f7e;
+        }
+        body.dark-theme .slide-preview input,
+        body.dark-theme .slide-preview textarea { color: white; }
+
+        /* ===== МЕНЮ ===== */
+        .menu-btn {
+            position: fixed; top: 20px; right: 20px;
+            width: 45px; height: 45px; border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white; font-size: 24px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.3s; z-index: 100; font-weight: bold;
+        }
+        .menu-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.1); }
+        .dropdown {
+            position: fixed; top: 75px; right: 20px;
+            background: white; border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+            padding: 15px; display: none; z-index: 99;
+            min-width: 220px; animation: fadeIn 0.2s ease;
+        }
+        .dropdown.show { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .dropdown-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 15px; border-radius: 10px;
+            cursor: pointer; transition: 0.2s; color: #333; font-size: 15px;
+        }
+        .dropdown-item:hover { background: #f0f4f8; }
+        .dropdown-item .icon { font-size: 22px; width: 30px; text-align: center; }
+
+        /* ===== БЕЙДЖ PREMIUM ===== */
+        .premium-badge {
+            display: none; position: fixed; top: 20px; left: 20px;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            color: #1a3a5c; padding: 8px 15px;
+            border-radius: 20px; font-weight: bold;
+            font-size: 13px; z-index: 100;
+            box-shadow: 0 5px 20px rgba(255,215,0,0.5);
+        }
+        .premium-badge.show { display: block; }
+
+        /* ===== СТРАНИЦЫ ===== */
+        .page { display: none; min-height: 100vh; padding: 40px 20px; }
+        .page.active { display: block; }
+
+        /* ===== ГЛАВНАЯ ===== */
+        .home-container {
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            min-height: 100vh; text-align: center;
+        }
+        .logo {
+            font-size: 72px; font-weight: bold; margin-bottom: 40px;
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .search-box {
+            display: flex; background: white; border-radius: 50px;
+            padding: 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%; max-width: 700px;
+        }
+        .search-box input {
+            flex: 1; border: none; outline: none;
+            padding: 15px 25px; font-size: 18px;
+            border-radius: 50px; color: #333;
+        }
+        .search-box button {
+            padding: 15px 30px; border: none;
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            color: white; font-size: 16px; font-weight: bold;
+            border-radius: 50px; cursor: pointer; transition: 0.3s;
+        }
+        .search-box button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255,107,53,0.5);
+        }
+        .engines {
+            margin-top: 30px; display: flex;
+            justify-content: center; gap: 15px; flex-wrap: wrap;
+        }
+        .engine {
+            padding: 12px 25px; background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 25px; cursor: pointer;
+            transition: 0.3s; font-size: 14px;
+        }
+        .engine:hover { background: rgba(255,255,255,0.2); border-color: #ff6b35; }
+        .engine.active {
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            border-color: transparent;
+        }
+
+        .ai-button {
+            margin-top: 30px; padding: 15px 40px;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            color: #1a3a5c; border: none; border-radius: 15px;
+            font-size: 18px; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+            box-shadow: 0 10px 30px rgba(255,215,0,0.3);
+        }
+        .ai-button:hover { transform: scale(1.05); }
+
+        .footer { margin-top: 40px; font-size: 12px; color: #a0c0e0; }
+
+        /* ===== СЕРВИСЫ ===== */
+        .service-header {
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            color: white; padding: 20px; border-radius: 15px;
+            margin-bottom: 20px; display: flex;
+            justify-content: space-between; align-items: center;
+            max-width: 900px; margin-left: auto; margin-right: auto;
+        }
+        .service-header h1 { margin: 0; font-size: 24px; }
+        .back-btn {
+            padding: 10px 20px; background: white; color: #ff6b35;
+            border: none; border-radius: 8px; cursor: pointer;
+            font-weight: bold; font-size: 14px;
+        }
+        .back-btn:hover { background: #f0f0f0; }
+        .service-content {
+            max-width: 900px; margin: 0 auto;
+            background: white; color: #333;
+            padding: 25px; border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .service-content input,
+        .service-content textarea {
+            width: 100%; padding: 12px;
+            border: 1px solid #ddd; border-radius: 8px;
+            font-family: Arial; font-size: 15px;
+            margin-bottom: 12px; outline: none;
+        }
+        .service-content textarea { min-height: 150px; resize: vertical; }
+        .service-content button {
+            padding: 12px 25px; background: #ff6b35;
+            color: white; border: none; border-radius: 8px;
+            cursor: pointer; font-weight: bold; font-size: 15px;
+            margin-right: 8px;
+        }
+        .service-content button:hover { background: #ff8f5e; }
+        .service-content h3 { color: #1a3a5c; margin-bottom: 15px; }
+
+        .mail-item { padding: 15px; border-bottom: 1px solid #eee; margin-bottom: 5px; }
+        .mail-item:last-child { border-bottom: none; }
+        .mail-item h4 { margin: 0 0 5px 0; color: #1a3a5c; }
+        .mail-item p { margin: 0; color: #666; font-size: 14px; }
+        .mail-item .date { font-size: 12px; color: #999; margin-top: 5px; }
+        .empty { text-align: center; color: #999; padding: 30px; }
+
+        .slide-preview {
+            background: #f8f9fa; border: 2px solid #e0e0e0;
+            border-radius: 10px; padding: 30px;
+            min-height: 250px; margin-bottom: 15px;
+        }
+        .slide-preview input {
+            font-size: 24px; font-weight: bold;
+            border: none; border-bottom: 2px solid #ddd;
+            background: transparent; margin-bottom: 15px;
+        }
+        .slide-preview textarea {
+            min-height: 150px; border: none;
+            background: transparent; font-size: 16px;
+        }
+        .slide-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        .slide-counter { text-align: center; color: #666; margin-top: 10px; font-size: 14px; }
+
+        /* ===== МАГАЗИН ===== */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .shop-item {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 18px; padding: 25px;
+            transition: 0.3s; position: relative; overflow: hidden;
+        }
+        .shop-item:hover {
+            border-color: #ff6b35; transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255,107,53,0.3);
+        }
+        .shop-item.featured {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,255,255,0.08) 100%);
+        }
+        .featured-badge {
+            position: absolute; top: 15px; right: -30px;
+            background: #ffd700; color: #1a3a5c;
+            padding: 5px 40px; font-size: 11px;
+            font-weight: bold; transform: rotate(45deg);
+        }
+        .item-icon { font-size: 48px; margin-bottom: 15px; }
+        .item-name { font-size: 22px; font-weight: bold; color: #ffd700; margin-bottom: 8px; }
+        .item-desc { font-size: 14px; color: #a0c0e0; margin-bottom: 20px; min-height: 60px; }
+        .item-price { font-size: 32px; font-weight: bold; color: #00ff88; margin-bottom: 15px; }
+        .item-price span { font-size: 18px; color: #a0c0e0; }
+        .buy-btn {
+            width: 100%; padding: 14px; border: none;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            color: white; font-size: 16px; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+        }
+        .buy-btn:hover { transform: scale(1.02); }
+        .buy-btn.owned { background: #00ff88; color: #1a3a5c; cursor: default; }
+
+        /* ===== УВЕДОМЛЕНИЕ ===== */
+        .notification {
+            position: fixed; top: 20px; right: 20px;
+            background: #00ff88; color: #1a3a5c;
+            padding: 15px 25px; border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0,255,136,0.5);
+            display: none; z-index: 1000;
+        }
+        .notification.show {
+            display: block; animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="premium-badge" id="premiumBadge">⭐ PREMIUM</div>
+<div class="notification" id="notification">Готово!</div>
+
+<div class="menu-btn" onclick="toggleMenu()">⋮</div>
+<div class="dropdown" id="dropdown">
+    <div class="dropdown-item" onclick="showPage('page-mail')">
+        <span class="icon">✉️</span><span>Clomb Mail</span>
+    </div>
+    <div class="dropdown-item" onclick="window.open('https://t.me/qveek_bot', '_blank')">
+        <span class="icon">🤖</span><span>Qveek AI</span>
+    </div>
+    <div class="dropdown-item" onclick="showPage('page-docs')">
+        <span class="icon">📄</span><span>Clomb Docs</span>
+    </div>
+    <div class="dropdown-item" onclick="showPage('page-presentation')">
+        <span class="icon">📊</span><span>Clomb Presentation</span>
+    </div>
+    <div class="dropdown-item" onclick="window.location.href='clomb_ai.html'">
+        <span class="icon">🧠</span><span>Clomb AI</span>
+    </div>
+    <div class="dropdown-item" onclick="showPage('page-shop')">
+        <span class="icon">🛒</span><span>Магазин</span>
+    </div>
+</div>
+
+<!-- ГЛАВНАЯ -->
+<div class="page active" id="page-home">
+    <div class="home-container">
+        <div class="logo">Clomb</div>
+        <div class="search-box">
+            <input type="text" id="query" placeholder="Что искать?" autocomplete="off">
+            <button onclick="search()">Найти</button>
+        </div>
+        <div class="engines">
+            <div class="engine active" data-engine="google" onclick="selectEngine(this)">Google</div>
+            <div class="engine" data-engine="yandex" onclick="selectEngine(this)">Яндекс</div>
+            <div class="engine" data-engine="duckduckgo" onclick="selectEngine(this)">DuckDuckGo</div>
+            <div class="engine" data-engine="all" onclick="selectEngine(this)">Все сразу</div>
+        </div>
+        <button class="ai-button" onclick="window.location.href='clomb_ai.html'">
+            🧠 Спросить у Clomb AI
+        </button>
+        <div class="footer">Clomb © 2026</div>
+    </div>
+</div>
+
+<!-- ПОЧТА -->
+<div class="page" id="page-mail">
+    <div class="service-header">
+        <h1>✉️ Clomb Mail</h1>
+        <button class="back-btn" onclick="showPage('page-home')">← Назад</button>
+    </div>
+    <div class="service-content">
+        <h3>Написать письмо</h3>
+        <input type="text" id="mailTo" placeholder="Кому (email)">
+        <input type="text" id="mailSubject" placeholder="Тема">
+        <textarea id="mailBody" placeholder="Текст письма..."></textarea>
+        <button onclick="sendMail()">Отправить</button>
+        <h3 style="margin-top:25px;">Входящие</h3>
+        <div id="mailList"></div>
+    </div>
+</div>
+
+<!-- ДОКУМЕНТЫ -->
+<div class="page" id="page-docs">
+    <div class="service-header">
+        <h1>📄 Clomb Docs</h1>
+        <button class="back-btn" onclick="showPage('page-home')">← Назад</button>
+    </div>
+    <div class="service-content">
+        <input type="text" id="docTitle" placeholder="Название документа...">
+        <textarea id="docBody" placeholder="Начни писать..."></textarea>
+        <button onclick="saveDoc()">💾 Сохранить</button>
+        <button onclick="newDoc()">📄 Новый</button>
+        <div id="docStatus" style="color:#999;font-size:12px;margin-top:10px;">Не сохранено</div>
+    </div>
+</div>
+
+<!-- ПРЕЗЕНТАЦИЯ -->
+<div class="page" id="page-presentation">
+    <div class="service-header">
+        <h1>📊 Clomb Presentation</h1>
+        <button class="back-btn" onclick="showPage('page-home')">← Назад</button>
+    </div>
+    <div class="service-content">
+        <div class="slide-preview">
+            <input type="text" id="slideTitle" placeholder="Заголовок слайда...">
+            <textarea id="slideBody" placeholder="Текст слайда..."></textarea>
+        </div>
+        <div class="slide-controls">
+            <button onclick="prevSlide()">← Назад</button>
+            <button onclick="newSlide()">+ Новый слайд</button>
+            <button onclick="nextSlide()">Вперёд →</button>
+            <button onclick="saveSlides()">💾 Сохранить</button>
+        </div>
+        <div class="slide-counter" id="slideCounter">Слайд 1</div>
+    </div>
+</div>
+
+<!-- МАГАЗИН -->
+<div class="page" id="page-shop">
+    <div class="service-header">
+        <h1>🛒 Clomb Shop</h1>
+        <button class="back-btn" onclick="showPage('page-home')">← Назад</button>
+    </div>
+    <div class="service-content" style="background:transparent;box-shadow:none;padding:0;">
+        <div class="shop-grid" id="shopGrid"></div>
+    </div>
+</div>
+
+<script>
+    // ===== ПРОВЕРКА PREMIUM =====
+    const owned = JSON.parse(localStorage.getItem('clomb_shop_owned') || '[]');
+    const isPremium = owned.includes('premium') || owned.includes('premium_plus');
+
+    if (isPremium) {
+        document.body.classList.add('dark-theme');
+        document.getElementById('premiumBadge').classList.add('show');
+    }
+
+    // ===== НАВИГАЦИЯ =====
+    function showPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        window.scrollTo(0, 0);
+        document.getElementById('dropdown').classList.remove('show');
+    }
+
+    function toggleMenu() {
+        document.getElementById('dropdown').classList.toggle('show');
+    }
+    document.addEventListener('click', (e) => {
+        const dd = document.getElementById('dropdown');
+        const btn = document.querySelector('.menu-btn');
+        if (!dd.contains(e.target) && !btn.contains(e.target)) {
+            dd.classList.remove('show');
+        }
+    });
+
+    // ===== ПОИСК =====
+    let currentEngine = 'google';
+    function selectEngine(el) {
+        document.querySelectorAll('.engine').forEach(e => e.classList.remove('active'));
+        el.classList.add('active');
+        currentEngine = el.dataset.engine;
+    }
+    function search() {
+        const query = document.getElementById('query').value.trim();
+        if (!query) return;
+        const encoded = encodeURIComponent(query);
+        if (currentEngine === 'google') window.open(`https://www.google.com/search?q=${encoded}`, '_blank');
+        else if (currentEngine === 'yandex') window.open(`https://yandex.ru/search/?text=${encoded}`, '_blank');
+        else if (currentEngine === 'duckduckgo') window.open(`https://duckduckgo.com/?q=${encoded}`, '_blank');
+        else if (currentEngine === 'all') {
+            window.open(`https://www.google.com/search?q=${encoded}`, '_blank');
+            setTimeout(() => window.open(`https://yandex.ru/search/?text=${encoded}`, '_blank'), 500);
+            setTimeout(() => window.open(`https://duckduckgo.com/?q=${encoded}`, '_blank'), 1000);
+        }
+    }
+    document.getElementById('query').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') search();
+    });
+
+    // ===== ПОЧТА =====
+    let mails = JSON.parse(localStorage.getItem('clomb_mails') || '[]');
+    function renderMails() {
+        const list = document.getElementById('mailList');
+        if (mails.length === 0) {
+            list.innerHTML = '<div class="empty">Пока пусто. Напиши первое письмо!</div>';
+            return;
+        }
+        let html = '';
+        mails.slice().reverse().forEach(m => {
+            html += `<div class="mail-item">
+                <h4>${m.subject || '(без темы)'}</h4>
+                <p><b>Кому:</b> ${m.to}</p>
+                <p>${m.body}</p>
+                <div class="date">${m.date}</div>
+            </div>`;
+        });
+        list.innerHTML = html;
+    }
+    function sendMail() {
+        const to = document.getElementById('mailTo').value.trim();
+        const subject = document.getElementById('mailSubject').value.trim();
+        const body = document.getElementById('mailBody').value.trim();
+        if (!to || !body) { alert('Заполни поля!'); return; }
+        mails.push({ to, subject, body, date: new Date().toLocaleString('ru-RU') });
+        localStorage.setItem('clomb_mails', JSON.stringify(mails));
+        document.getElementById('mailTo').value = '';
+        document.getElementById('mailSubject').value = '';
+        document.getElementById('mailBody').value = '';
+        renderMails();
+    }
+    renderMails();
+
+    // ===== ДОКУМЕНТЫ =====
+    function saveDoc() {
+        const title = document.getElementById('docTitle').value.trim();
+        const body = document.getElementById('docBody').value;
+        if (!title) { alert('Введи название!'); return; }
+        localStorage.setItem('clomb_doc_' + title, body);
+        document.getElementById('docStatus').textContent = 'Сохранено: ' + new Date().toLocaleString('ru-RU');
+    }
+    function newDoc() {
+        document.getElementById('docTitle').value = '';
+        document.getElementById('docBody').value = '';
+        document.getElementById('docStatus').textContent = 'Новый документ';
+    }
+
+    // ===== ПРЕЗЕНТАЦИЯ =====
+    let slides = JSON.parse(localStorage.getItem('clomb_slides') || '[]');
+    let currentSlide = 0;
+    if (slides.length === 0) slides.push({ title: '', body: '' });
+
+    function renderSlide() {
+        document.getElementById('slideTitle').value = slides[currentSlide].title || '';
+        document.getElementById('slideBody').value = slides[currentSlide].body || '';
+        document.getElementById('slideCounter').textContent = 'Слайд ' + (currentSlide + 1) + ' из ' + slides.length;
+    }
+    function saveCurrentSlide() {
+        slides[currentSlide].title = document.getElementById('slideTitle').value;
+        slides[currentSlide].body = document.getElementById('slideBody').value;
+    }
+    function nextSlide() {
+        saveCurrentSlide();
+        if (currentSlide < slides.length - 1) currentSlide++;
+        renderSlide();
+    }
+    function prevSlide() {
+        saveCurrentSlide();
+        if (currentSlide > 0) currentSlide--;
+        renderSlide();
+    }
+    function newSlide() {
+        saveCurrentSlide();
+        slides.push({ title: '', body: '' });
+        currentSlide = slides.length - 1;
+        renderSlide();
+    }
+    function saveSlides() {
+        saveCurrentSlide();
+        localStorage.setItem('clomb_slides', JSON.stringify(slides));
+        alert('Презентация сохранена!');
+    }
+    renderSlide();
+
+    // ===== МАГАЗИН =====
+    const PRICE = 500;
+    const PRODUCTS = [
+        { id: 'premium', icon: '⭐', name: 'Clomb Premium',
+          desc: 'Тёмная тема, без рекламы, все функции.', featured: true },
+        { id: 'storage_plus', icon: '💾', name: 'Storage+',
+          desc: 'Больше места для документов. До 10 ГБ.' },
+        { id: 'mail_pro', icon: '✉️', name: 'Mail Pro',
+          desc: 'Папки, фильтры, метки, неограниченные письма.' },
+        { id: 'ai_boost', icon: '🤖', name: 'AI Boost',
+          desc: 'Больше запросов к Clomb AI.' },
+        { id: 'premium_plus', icon: '👑', name: 'Premium+',
+          desc: 'Всё из Premium, плюс поддержка.', featured: true },
+        { id: 'storage_pro', icon: '🗄️', name: 'Storage Pro',
+          desc: '100 ГБ места. Синхронизация.' },
+        { id: 'mail_business', icon: '📧', name: 'Mail Business',
+          desc: 'Свой домен, командная работа.' },
+        { id: 'ai_unlimited', icon: '🚀', name: 'AI Unlimited',
+          desc: 'Неограниченные запросы к Clomb AI.' }
+    ];
+
+    function notify(text, color = '#00ff88') {
+        const n = document.getElementById('notification');
+        n.textContent = text; n.style.background = color;
+        n.classList.add('show');
+        setTimeout(() => n.classList.remove('show'), 2500);
+    }
+
+    function renderShop() {
+        const grid = document.getElementById('shopGrid');
+        let html = '';
+        PRODUCTS.forEach(p => {
+            const isOwned = owned.includes(p.id);
+            html += `
+                <div class="shop-item ${p.featured ? 'featured' : ''}">
+                    ${p.featured ? '<div class="featured-badge">ХИТ</div>' : ''}
+                    <div class="item-icon">${p.icon}</div>
+                    <div class="item-name">${p.name}</div>
+                    <div class="item-desc">${p.desc}</div>
+                    <div class="item-price">${PRICE} <span>₽</span></div>
+                    <button class="buy-btn ${isOwned ? 'owned' : ''}"
+                            onclick="buyProduct('${p.id}')"
+                            ${isOwned ? 'disabled' : ''}>
+                        ${isOwned ? '✓ Куплено' : 'Купить'}
+                    </button>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+    }
+
+    function buyProduct(id) {
+        if (owned.includes(id)) { notify('Уже куплено!', '#ffaa00'); return; }
+        owned.push(id);
+        localStorage.setItem('clomb_shop_owned', JSON.stringify(owned));
+        notify('Куплено! Обнови страницу.');
+        renderShop();
+    }
+
+    renderShop();
+    document.getElementById('query').focus();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clomb Shop</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1a3a5c 0%, #2c5f8a 100%);
+            min-height: 100vh;
+            color: white;
+            padding: 30px 20px;
+        }
+        .container { max-width: 1100px; margin: 0 auto; }
+
+        .header { text-align: center; margin-bottom: 30px; }
+        .logo {
+            font-size: 56px;
+            font-weight: bold;
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        .subtitle { color: #a0c0e0; font-size: 18px; }
+
+        .user-bar {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .user-info h3 { color: #ffd700; font-size: 20px; margin-bottom: 5px; }
+        .user-info p { color: #a0c0e0; font-size: 14px; }
+        .balance { text-align: right; }
+        .balance-value { font-size: 36px; font-weight: bold; color: #00ff88; }
+        .balance-label { font-size: 14px; color: #a0c0e0; }
+
+        .categories {
+            display: flex; gap: 10px; margin-bottom: 25px;
+            flex-wrap: wrap; justify-content: center;
+        }
+        .category {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-size: 14px;
+        }
+        .category:hover { background: rgba(255,255,255,0.2); border-color: #ff6b35; }
+        .category.active {
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            border-color: transparent;
+        }
+
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .shop-item {
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            border-radius: 18px;
+            padding: 25px;
+            transition: 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .shop-item:hover {
+            border-color: #ff6b35;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(255,107,53,0.3);
+        }
+        .shop-item.featured {
+            border-color: #ffd700;
+            background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,255,255,0.08) 100%);
+        }
+        .featured-badge {
+            position: absolute;
+            top: 15px;
+            right: -30px;
+            background: #ffd700;
+            color: #1a3a5c;
+            padding: 5px 40px;
+            font-size: 11px;
+            font-weight: bold;
+            transform: rotate(45deg);
+        }
+        .item-icon { font-size: 48px; margin-bottom: 15px; }
+        .item-name { font-size: 22px; font-weight: bold; color: #ffd700; margin-bottom: 8px; }
+        .item-desc { font-size: 14px; color: #a0c0e0; margin-bottom: 20px; min-height: 60px; }
+        .item-price { font-size: 32px; font-weight: bold; color: #00ff88; margin-bottom: 15px; }
+        .item-price span { font-size: 18px; color: #a0c0e0; }
+        .buy-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #ff6b35, #ffb347);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .buy-btn:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(255,107,53,0.5); }
+        .buy-btn.owned { background: #00ff88; color: #1a3a5c; cursor: default; }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #00ff88;
+            color: #1a3a5c;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0,255,136,0.5);
+            display: none;
+            z-index: 1000;
+        }
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 500;
+        }
+        .modal.show { display: flex; }
+        .modal-content {
+            background: #1a3a5c;
+            border: 3px solid #ffd700;
+            padding: 40px;
+            border-radius: 25px;
+            max-width: 450px;
+            text-align: center;
+        }
+        .modal-content h2 { color: #ffd700; margin-bottom: 15px; font-size: 28px; }
+        .modal-content p { color: #a0c0e0; margin-bottom: 20px; }
+        .modal-price { font-size: 42px; font-weight: bold; color: #00ff88; margin: 20px 0; }
+        .modal-buttons { display: flex; gap: 10px; justify-content: center; margin-top: 25px; }
+        .modal-buttons button {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .btn-pay {
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            color: #1a3a5c;
+        }
+        .btn-pay:hover { transform: scale(1.05); }
+        .btn-cancel {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .btn-cancel:hover { background: rgba(255,255,255,0.2); }
+
+        .history-section {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 25px;
+        }
+        .history-section h3 { color: #ffd700; margin-bottom: 15px; }
+        .history-item {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .history-item:last-child { border-bottom: none; }
+        .history-item .title { font-size: 15px; }
+        .history-item .date { font-size: 12px; color: #a0c0e0; }
+        .history-item .amount { font-weight: bold; font-size: 16px; color: #ff4757; }
+    </style>
+</head>
+<body>
+
+<div class="notification" id="notification">Готово!</div>
+
+<div class="modal" id="payModal">
+    <div class="modal-content">
+        <h2>💳 Оплата</h2>
+        <p id="modalItemName">Товар</p>
+        <div class="modal-price">500 ₽</div>
+        <p style="font-size:13px;">Оплата через ЮMoney</p>
+        <div class="modal-buttons">
+            <button class="btn-pay" onclick="confirmPay()">Оплатить</button>
+            <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="header">
+        <div class="logo">Clomb Shop</div>
+        <div class="subtitle">Все товары по 500 ₽ — навсегда!</div>
+    </div>
+
+    <div class="user-bar">
+        <div class="user-info">
+            <h3 id="userName">Гость</h3>
+            <p id="userAccount">Войди, чтобы покупать</p>
+        </div>
+        <div class="balance">
+            <div class="balance-value"><span id="balance">0</span> Q</div>
+            <div class="balance-label">Баланс Квантов</div>
+        </div>
+    </div>
+
+    <div class="categories">
+        <div class="category active" onclick="filterCategory(this, 'all')">Все</div>
+        <div class="category" onclick="filterCategory(this, 'premium')">Премиум</div>
+        <div class="category" onclick="filterCategory(this, 'storage')">Хранилище</div>
+        <div class="category" onclick="filterCategory(this, 'mail')">Почта</div>
+        <div class="category" onclick="filterCategory(this, 'ai')">AI</div>
+    </div>
+
+    <div class="shop-grid" id="shopGrid"></div>
+
+    <div class="history-section">
+        <h3>📜 История покупок</h3>
+        <div id="historyList">
+            <div style="text-align:center;color:#a0c0e0;padding:20px;">Пока нет покупок</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const PRICE = 500;
+
+    const PRODUCTS = [
+        { id: 'premium', category: 'premium', icon: '⭐', name: 'Clomb Premium',
+          desc: 'Тёмная тема, без рекламы, увеличенные лимиты.', featured: true },
+        { id: 'storage_plus', category: 'storage', icon: '💾', name: 'Storage+',
+          desc: 'Больше места для документов. До 10 ГБ.' },
+        { id: 'mail_pro', category: 'mail', icon: '✉️', name: 'Mail Pro',
+          desc: 'Папки, фильтры, метки, неограниченные письма.' },
+        { id: 'ai_boost', category: 'ai', icon: '🤖', name: 'AI Boost',
+          desc: 'Больше запросов к Qveek AI. Приоритетная очередь.' },
+        { id: 'premium_plus', category: 'premium', icon: '👑', name: 'Premium+',
+          desc: 'Всё из Premium, плюс поддержка и ранний доступ.', featured: true },
+        { id: 'storage_pro', category: 'storage', icon: '🗄️', name: 'Storage Pro',
+          desc: '100 ГБ места. Синхронизация.' },
+        { id: 'mail_business', category: 'mail', icon: '📧', name: 'Mail Business',
+          desc: 'Свой домен, командная работа, аналитика.' },
+        { id: 'ai_unlimited', category: 'ai', icon: '🚀', name: 'AI Unlimited',
+          desc: 'Неограниченные запросы к Qveek AI.' }
+    ];
+
+    let user = JSON.parse(localStorage.getItem('clomb_shop_user') || 'null');
+    let owned = JSON.parse(localStorage.getItem('clomb_shop_owned') || '[]');
+    let history = JSON.parse(localStorage.getItem('clomb_shop_history') || '[]');
+    let currentCategory = 'all';
+    let currentProduct = null;
+
+    function save() {
+        localStorage.setItem('clomb_shop_user', JSON.stringify(user));
+        localStorage.setItem('clomb_shop_owned', JSON.stringify(owned));
+        localStorage.setItem('clomb_shop_history', JSON.stringify(history));
+    }
+
+    function notify(text, color = '#00ff88') {
+        const n = document.getElementById('notification');
+        n.textContent = text;
+        n.style.background = color;
+        n.classList.add('show');
+        setTimeout(() => n.classList.remove('show'), 2500);
+    }
+
+    function ensureUser() {
+        if (!user) {
+            const name = prompt('Введи своё имя:');
+            if (!name) return false;
+            user = { name: name };
+            save();
+        }
+        return true;
+    }
+
+    function render() {
+        if (user) {
+            document.getElementById('userName').textContent = user.name;
+            document.getElementById('userAccount').textContent = 'Куплено товаров: ' + owned.length;
+        }
+
+        const grid = document.getElementById('shopGrid');
+        const filtered = currentCategory === 'all'
+            ? PRODUCTS
+            : PRODUCTS.filter(p => p.category === currentCategory);
+
+        let html = '';
+        filtered.forEach(p => {
+            const isOwned = owned.includes(p.id);
+            html += `
+                <div class="shop-item ${p.featured ? 'featured' : ''}">
+                    ${p.featured ? '<div class="featured-badge">ХИТ</div>' : ''}
+                    <div class="item-icon">${p.icon}</div>
+                    <div class="item-name">${p.name}</div>
+                    <div class="item-desc">${p.desc}</div>
+                    <div class="item-price">${PRICE} <span>₽</span></div>
+                    <button class="buy-btn ${isOwned ? 'owned' : ''}"
+                            onclick="buyProduct('${p.id}')"
+                            ${isOwned ? 'disabled' : ''}>
+                        ${isOwned ? '✓ Куплено' : 'Купить'}
+                    </button>
+                </div>
+            `;
+        });
+        grid.innerHTML = html;
+
+        renderHistory();
+    }
+
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        if (history.length === 0) {
+            list.innerHTML = '<div style="text-align:center;color:#a0c0e0;padding:20px;">Пока нет покупок</div>';
+            return;
+        }
+        let html = '';
+        history.slice().reverse().forEach(h => {
+            html += `
+                <div class="history-item">
+                    <div>
+                        <div class="title">${h.title}</div>
+                        <div class="date">${h.date}</div>
+                    </div>
+                    <div class="amount">-${PRICE} ₽</div>
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+    }
+
+    function filterCategory(el, cat) {
+        document.querySelectorAll('.category').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        currentCategory = cat;
+        render();
+    }
+
+    function buyProduct(id) {
+        if (!ensureUser()) return;
+        const product = PRODUCTS.find(p => p.id === id);
+        if (!product) return;
+
+        if (owned.includes(id)) {
+            notify('Уже куплено!', '#ffaa00');
+            return;
+        }
+
+        currentProduct = product;
+        document.getElementById('modalItemName').textContent = product.name;
+        document.getElementById('payModal').classList.add('show');
+    }
+
+    function closeModal() {
+        document.getElementById('payModal').classList.remove('show');
+        currentProduct = null;
+    }
+
+    function confirmPay() {
+        if (!currentProduct) return;
+
+        // ===== ЮMONEY =====
+        // Замени ТВОЙ_КОШЕЛЁК на номер кошелька ЮMoney
+        window.open('https://yoomoney.ru/quickpay/confirm.xml?' +
+            'receiver=4100119632949588' +
+            '&quickpay-form=shop' +
+            '&targets=' + encodeURIComponent('Clomb ' + currentProduct.name) +
+            '&sum=' + PRICE +
+            '&label=' + currentProduct.id +
+            '&successURL=https://твой-сайт.ру/success', '_blank');
+
+        owned.push(currentProduct.id);
+        history.push({
+            title: 'Куплено: ' + currentProduct.name,
+            date: new Date().toLocaleString('ru-RU')
+        });
+        save();
+        render();
+        closeModal();
+        notify('Куплено: ' + currentProduct.name + '!');
+    }
+
+    // ===== СТАРТ =====
+    render();
+</script>
+
+</body>
+</html>
